@@ -1,0 +1,710 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import './StudentProfile.css';
+
+const StudentProfile = () => {
+  const { user, token } = useAuth();
+  const [activeTab, setActiveTab] = useState('personal');
+  const [profileData, setProfileData] = useState({
+    personalInfo: {
+      dateOfBirth: '',
+      gender: '',
+      nationality: '',
+      passportNumber: '',
+      permanentAddress: {
+        street: '',
+        city: '',
+        state: '',
+        country: '',
+        postalCode: ''
+      },
+      currentAddress: {
+        street: '',
+        city: '',
+        state: '',
+        country: '',
+        postalCode: ''
+      },
+      emergencyContact: {
+        name: '',
+        relationship: '',
+        phone: '',
+        email: ''
+      }
+    },
+    education: [],
+    englishProficiency: {
+      testType: '',
+      overallScore: '',
+      sectionalScores: {
+        listening: '',
+        reading: '',
+        writing: '',
+        speaking: ''
+      },
+      testDate: '',
+      reportNumber: ''
+    },
+    preferences: {
+      targetCountries: [],
+      preferredUniversities: [],
+      intendedPrograms: [],
+      intake: '',
+      year: new Date().getFullYear()
+    }
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const countries = [
+    'United Kingdom', 'United States', 'Australia', 'New Zealand', 
+    'Canada', 'Germany', 'France', 'Netherlands', 'Ireland', 'Switzerland'
+  ];
+
+  const universities = {
+    'United Kingdom': ['Oxford University', 'Cambridge University', 'Imperial College London', 'UCL', 'King\'s College London'],
+    'United States': ['Harvard University', 'MIT', 'Stanford University', 'UCLA', 'NYU'],
+    'Australia': ['University of Melbourne', 'Australian National University', 'University of Sydney', 'UNSW', 'Monash University'],
+    'New Zealand': ['University of Auckland', 'University of Otago', 'Victoria University of Wellington'],
+    'Canada': ['University of Toronto', 'UBC', 'McGill University', 'University of Waterloo']
+  };
+
+  useEffect(() => {
+    fetchProfileData();
+  }, []);
+
+  const fetchProfileData = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/students/profile', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setProfileData({ ...profileData, ...data });
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
+
+  const handleSubmit = async (section) => {
+    setLoading(true);
+    try {
+      const response = await fetch('http://localhost:5000/api/students/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ [section]: profileData[section] })
+      });
+
+      if (response.ok) {
+        setMessage('Profile updated successfully!');
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        setMessage('Error updating profile');
+      }
+    } catch (error) {
+      setMessage('Network error');
+    }
+    setLoading(false);
+  };
+
+  const addEducation = () => {
+    setProfileData({
+      ...profileData,
+      education: [
+        ...profileData.education,
+        {
+          level: '',
+          institution: '',
+          country: '',
+          programName: '',
+          yearPassed: '',
+          gradeType: 'GPA',
+          gradeValue: '',
+          isHighest: false
+        }
+      ]
+    });
+  };
+
+  const updateEducation = (index, field, value) => {
+    const updatedEducation = [...profileData.education];
+    updatedEducation[index] = { ...updatedEducation[index], [field]: value };
+    setProfileData({ ...profileData, education: updatedEducation });
+  };
+
+  const removeEducation = (index) => {
+    const updatedEducation = profileData.education.filter((_, i) => i !== index);
+    setProfileData({ ...profileData, education: updatedEducation });
+  };
+
+  return (
+    <div className="student-profile">
+      <div className="profile-header">
+        <h1>My Profile</h1>
+        <div className="profile-progress">
+          <div className="progress-bar">
+            <div className="progress-fill" style={{ width: '60%' }}></div>
+          </div>
+          <span>60% Complete</span>
+        </div>
+      </div>
+
+      {message && <div className="message">{message}</div>}
+
+      <div className="profile-tabs">
+        <button 
+          className={activeTab === 'personal' ? 'tab active' : 'tab'}
+          onClick={() => setActiveTab('personal')}
+        >
+          Personal Details
+        </button>
+        <button 
+          className={activeTab === 'education' ? 'tab active' : 'tab'}
+          onClick={() => setActiveTab('education')}
+        >
+          Education
+        </button>
+        <button 
+          className={activeTab === 'english' ? 'tab active' : 'tab'}
+          onClick={() => setActiveTab('english')}
+        >
+          English Test
+        </button>
+        <button 
+          className={activeTab === 'preferences' ? 'tab active' : 'tab'}
+          onClick={() => setActiveTab('preferences')}
+        >
+          Preferences
+        </button>
+      </div>
+
+      <div className="tab-content">
+        {activeTab === 'personal' && (
+          <div className="personal-info-form">
+            <h2>Personal Information</h2>
+            <div className="form-grid">
+              <div className="form-group">
+                <label>Date of Birth</label>
+                <input
+                  type="date"
+                  value={profileData.personalInfo.dateOfBirth}
+                  onChange={(e) => setProfileData({
+                    ...profileData,
+                    personalInfo: { ...profileData.personalInfo, dateOfBirth: e.target.value }
+                  })}
+                />
+              </div>
+              <div className="form-group">
+                <label>Gender</label>
+                <select
+                  value={profileData.personalInfo.gender}
+                  onChange={(e) => setProfileData({
+                    ...profileData,
+                    personalInfo: { ...profileData.personalInfo, gender: e.target.value }
+                  })}
+                >
+                  <option value="">Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                  <option value="Prefer not to say">Prefer not to say</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Nationality</label>
+                <select
+                  value={profileData.personalInfo.nationality}
+                  onChange={(e) => setProfileData({
+                    ...profileData,
+                    personalInfo: { ...profileData.personalInfo, nationality: e.target.value }
+                  })}
+                >
+                  <option value="">Select Nationality</option>
+                  {countries.map(country => (
+                    <option key={country} value={country}>{country}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Passport Number</label>
+                <input
+                  type="text"
+                  value={profileData.personalInfo.passportNumber}
+                  onChange={(e) => setProfileData({
+                    ...profileData,
+                    personalInfo: { ...profileData.personalInfo, passportNumber: e.target.value }
+                  })}
+                />
+              </div>
+            </div>
+
+            <h3>Permanent Address</h3>
+            <div className="form-grid">
+              <div className="form-group">
+                <label>Street Address</label>
+                <input
+                  type="text"
+                  value={profileData.personalInfo.permanentAddress.street}
+                  onChange={(e) => setProfileData({
+                    ...profileData,
+                    personalInfo: {
+                      ...profileData.personalInfo,
+                      permanentAddress: { ...profileData.personalInfo.permanentAddress, street: e.target.value }
+                    }
+                  })}
+                />
+              </div>
+              <div className="form-group">
+                <label>City</label>
+                <input
+                  type="text"
+                  value={profileData.personalInfo.permanentAddress.city}
+                  onChange={(e) => setProfileData({
+                    ...profileData,
+                    personalInfo: {
+                      ...profileData.personalInfo,
+                      permanentAddress: { ...profileData.personalInfo.permanentAddress, city: e.target.value }
+                    }
+                  })}
+                />
+              </div>
+              <div className="form-group">
+                <label>State/Province</label>
+                <input
+                  type="text"
+                  value={profileData.personalInfo.permanentAddress.state}
+                  onChange={(e) => setProfileData({
+                    ...profileData,
+                    personalInfo: {
+                      ...profileData.personalInfo,
+                      permanentAddress: { ...profileData.personalInfo.permanentAddress, state: e.target.value }
+                    }
+                  })}
+                />
+              </div>
+              <div className="form-group">
+                <label>Country</label>
+                <select
+                  value={profileData.personalInfo.permanentAddress.country}
+                  onChange={(e) => setProfileData({
+                    ...profileData,
+                    personalInfo: {
+                      ...profileData.personalInfo,
+                      permanentAddress: { ...profileData.personalInfo.permanentAddress, country: e.target.value }
+                    }
+                  })}
+                >
+                  <option value="">Select Country</option>
+                  {countries.map(country => (
+                    <option key={country} value={country}>{country}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Postal Code</label>
+                <input
+                  type="text"
+                  value={profileData.personalInfo.permanentAddress.postalCode}
+                  onChange={(e) => setProfileData({
+                    ...profileData,
+                    personalInfo: {
+                      ...profileData.personalInfo,
+                      permanentAddress: { ...profileData.personalInfo.permanentAddress, postalCode: e.target.value }
+                    }
+                  })}
+                />
+              </div>
+            </div>
+
+            <h3>Emergency Contact</h3>
+            <div className="form-grid">
+              <div className="form-group">
+                <label>Name</label>
+                <input
+                  type="text"
+                  value={profileData.personalInfo.emergencyContact.name}
+                  onChange={(e) => setProfileData({
+                    ...profileData,
+                    personalInfo: {
+                      ...profileData.personalInfo,
+                      emergencyContact: { ...profileData.personalInfo.emergencyContact, name: e.target.value }
+                    }
+                  })}
+                />
+              </div>
+              <div className="form-group">
+                <label>Relationship</label>
+                <input
+                  type="text"
+                  value={profileData.personalInfo.emergencyContact.relationship}
+                  onChange={(e) => setProfileData({
+                    ...profileData,
+                    personalInfo: {
+                      ...profileData.personalInfo,
+                      emergencyContact: { ...profileData.personalInfo.emergencyContact, relationship: e.target.value }
+                    }
+                  })}
+                />
+              </div>
+              <div className="form-group">
+                <label>Phone</label>
+                <input
+                  type="tel"
+                  value={profileData.personalInfo.emergencyContact.phone}
+                  onChange={(e) => setProfileData({
+                    ...profileData,
+                    personalInfo: {
+                      ...profileData.personalInfo,
+                      emergencyContact: { ...profileData.personalInfo.emergencyContact, phone: e.target.value }
+                    }
+                  })}
+                />
+              </div>
+              <div className="form-group">
+                <label>Email</label>
+                <input
+                  type="email"
+                  value={profileData.personalInfo.emergencyContact.email}
+                  onChange={(e) => setProfileData({
+                    ...profileData,
+                    personalInfo: {
+                      ...profileData.personalInfo,
+                      emergencyContact: { ...profileData.personalInfo.emergencyContact, email: e.target.value }
+                    }
+                  })}
+                />
+              </div>
+            </div>
+
+            <button 
+              className="btn-primary"
+              onClick={() => handleSubmit('personalInfo')}
+              disabled={loading}
+            >
+              {loading ? 'Saving...' : 'Save Personal Information'}
+            </button>
+          </div>
+        )}
+
+        {activeTab === 'education' && (
+          <div className="education-form">
+            <div className="section-header">
+              <h2>Educational Qualifications</h2>
+              <button className="btn-secondary" onClick={addEducation}>
+                Add Education
+              </button>
+            </div>
+
+            {profileData.education.map((edu, index) => (
+              <div key={index} className="education-item">
+                <div className="item-header">
+                  <h3>Education {index + 1}</h3>
+                  <button 
+                    className="btn-danger"
+                    onClick={() => removeEducation(index)}
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label>Level</label>
+                    <select
+                      value={edu.level}
+                      onChange={(e) => updateEducation(index, 'level', e.target.value)}
+                    >
+                      <option value="">Select Level</option>
+                      <option value="High School">High School</option>
+                      <option value="Diploma">Diploma</option>
+                      <option value="Bachelor's">Bachelor's</option>
+                      <option value="Master's">Master's</option>
+                      <option value="PhD">PhD</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Institution</label>
+                    <input
+                      type="text"
+                      value={edu.institution}
+                      onChange={(e) => updateEducation(index, 'institution', e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Country</label>
+                    <select
+                      value={edu.country}
+                      onChange={(e) => updateEducation(index, 'country', e.target.value)}
+                    >
+                      <option value="">Select Country</option>
+                      {countries.map(country => (
+                        <option key={country} value={country}>{country}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Program Name</label>
+                    <input
+                      type="text"
+                      value={edu.programName}
+                      onChange={(e) => updateEducation(index, 'programName', e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Year Passed</label>
+                    <input
+                      type="number"
+                      value={edu.yearPassed}
+                      onChange={(e) => updateEducation(index, 'yearPassed', e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Grade Type</label>
+                    <select
+                      value={edu.gradeType}
+                      onChange={(e) => updateEducation(index, 'gradeType', e.target.value)}
+                    >
+                      <option value="GPA">GPA</option>
+                      <option value="Percentage">Percentage</option>
+                      <option value="Grade">Grade</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Grade Value</label>
+                    <input
+                      type="text"
+                      value={edu.gradeValue}
+                      onChange={(e) => updateEducation(index, 'gradeValue', e.target.value)}
+                      placeholder={edu.gradeType === 'GPA' ? 'e.g., 3.8' : edu.gradeType === 'Percentage' ? 'e.g., 85%' : 'Enter grade'}
+                    />
+                  </div>
+                  <div className="form-group checkbox-group">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={edu.isHighest}
+                        onChange={(e) => updateEducation(index, 'isHighest', e.target.checked)}
+                      />
+                      Highest Qualification
+                    </label>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            <button 
+              className="btn-primary"
+              onClick={() => handleSubmit('education')}
+              disabled={loading}
+            >
+              {loading ? 'Saving...' : 'Save Education Details'}
+            </button>
+          </div>
+        )}
+
+        {activeTab === 'english' && (
+          <div className="english-test-form">
+            <h2>English Proficiency Test</h2>
+            <div className="form-grid">
+              <div className="form-group">
+                <label>Test Type</label>
+                <select
+                  value={profileData.englishProficiency.testType}
+                  onChange={(e) => setProfileData({
+                    ...profileData,
+                    englishProficiency: { ...profileData.englishProficiency, testType: e.target.value }
+                  })}
+                >
+                  <option value="">Select Test</option>
+                  <option value="IELTS">IELTS</option>
+                  <option value="TOEFL">TOEFL</option>
+                  <option value="PTE">PTE</option>
+                  <option value="Duolingo">Duolingo</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Overall Score</label>
+                <input
+                  type="text"
+                  value={profileData.englishProficiency.overallScore}
+                  onChange={(e) => setProfileData({
+                    ...profileData,
+                    englishProficiency: { ...profileData.englishProficiency, overallScore: e.target.value }
+                  })}
+                />
+              </div>
+              <div className="form-group">
+                <label>Test Date</label>
+                <input
+                  type="date"
+                  value={profileData.englishProficiency.testDate}
+                  onChange={(e) => setProfileData({
+                    ...profileData,
+                    englishProficiency: { ...profileData.englishProficiency, testDate: e.target.value }
+                  })}
+                />
+              </div>
+              <div className="form-group">
+                <label>Report Number</label>
+                <input
+                  type="text"
+                  value={profileData.englishProficiency.reportNumber}
+                  onChange={(e) => setProfileData({
+                    ...profileData,
+                    englishProficiency: { ...profileData.englishProficiency, reportNumber: e.target.value }
+                  })}
+                />
+              </div>
+            </div>
+
+            <h3>Sectional Scores</h3>
+            <div className="form-grid">
+              <div className="form-group">
+                <label>Listening</label>
+                <input
+                  type="text"
+                  value={profileData.englishProficiency.sectionalScores.listening}
+                  onChange={(e) => setProfileData({
+                    ...profileData,
+                    englishProficiency: {
+                      ...profileData.englishProficiency,
+                      sectionalScores: { ...profileData.englishProficiency.sectionalScores, listening: e.target.value }
+                    }
+                  })}
+                />
+              </div>
+              <div className="form-group">
+                <label>Reading</label>
+                <input
+                  type="text"
+                  value={profileData.englishProficiency.sectionalScores.reading}
+                  onChange={(e) => setProfileData({
+                    ...profileData,
+                    englishProficiency: {
+                      ...profileData.englishProficiency,
+                      sectionalScores: { ...profileData.englishProficiency.sectionalScores, reading: e.target.value }
+                    }
+                  })}
+                />
+              </div>
+              <div className="form-group">
+                <label>Writing</label>
+                <input
+                  type="text"
+                  value={profileData.englishProficiency.sectionalScores.writing}
+                  onChange={(e) => setProfileData({
+                    ...profileData,
+                    englishProficiency: {
+                      ...profileData.englishProficiency,
+                      sectionalScores: { ...profileData.englishProficiency.sectionalScores, writing: e.target.value }
+                    }
+                  })}
+                />
+              </div>
+              <div className="form-group">
+                <label>Speaking</label>
+                <input
+                  type="text"
+                  value={profileData.englishProficiency.sectionalScores.speaking}
+                  onChange={(e) => setProfileData({
+                    ...profileData,
+                    englishProficiency: {
+                      ...profileData.englishProficiency,
+                      sectionalScores: { ...profileData.englishProficiency.sectionalScores, speaking: e.target.value }
+                    }
+                  })}
+                />
+              </div>
+            </div>
+
+            <button 
+              className="btn-primary"
+              onClick={() => handleSubmit('englishProficiency')}
+              disabled={loading}
+            >
+              {loading ? 'Saving...' : 'Save English Test Details'}
+            </button>
+          </div>
+        )}
+
+        {activeTab === 'preferences' && (
+          <div className="preferences-form">
+            <h2>University Preferences</h2>
+            <div className="form-grid">
+              <div className="form-group">
+                <label>Target Countries</label>
+                <div className="checkbox-list">
+                  {countries.map(country => (
+                    <label key={country} className="checkbox-item">
+                      <input
+                        type="checkbox"
+                        checked={profileData.preferences.targetCountries.includes(country)}
+                        onChange={(e) => {
+                          const updatedCountries = e.target.checked
+                            ? [...profileData.preferences.targetCountries, country]
+                            : profileData.preferences.targetCountries.filter(c => c !== country);
+                          setProfileData({
+                            ...profileData,
+                            preferences: { ...profileData.preferences, targetCountries: updatedCountries }
+                          });
+                        }}
+                      />
+                      {country}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="form-group">
+                <label>Intake</label>
+                <select
+                  value={profileData.preferences.intake}
+                  onChange={(e) => setProfileData({
+                    ...profileData,
+                    preferences: { ...profileData.preferences, intake: e.target.value }
+                  })}
+                >
+                  <option value="">Select Intake</option>
+                  <option value="Fall">Fall</option>
+                  <option value="Spring">Spring</option>
+                  <option value="Summer">Summer</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Year</label>
+                <input
+                  type="number"
+                  value={profileData.preferences.year}
+                  onChange={(e) => setProfileData({
+                    ...profileData,
+                    preferences: { ...profileData.preferences, year: e.target.value }
+                  })}
+                  min={new Date().getFullYear()}
+                  max={new Date().getFullYear() + 3}
+                />
+              </div>
+            </div>
+
+            <button 
+              className="btn-primary"
+              onClick={() => handleSubmit('preferences')}
+              disabled={loading}
+            >
+              {loading ? 'Saving...' : 'Save Preferences'}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default StudentProfile;

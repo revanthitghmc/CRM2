@@ -1,0 +1,38 @@
+const mongoose = require('mongoose');
+
+const documentSchema = new mongoose.Schema({
+  studentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Student',
+    required: true
+  },
+  documentType: {
+    type: String,
+    enum: [
+      'Passport Copy',
+      'Academic Transcripts',
+      'English Test Report',
+      'Statement of Purpose',
+      'Letter of Recommendation',
+      'Resume/CV',
+      'Other'
+    ],
+    required: true
+  },
+  fileName: String,
+  originalName: String,
+  filePath: String,
+  fileSize: Number,
+  mimeType: String,
+  uploadDate: {
+    type: Date,
+    default: Date.now
+  },
+  description: String,
+  isVerified: {
+    type: Boolean,
+    default: false
+  }
+});
+
+module.exports = mongoose.model('Document', documentSchema);
