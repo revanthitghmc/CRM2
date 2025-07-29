@@ -1,0 +1,49 @@
+const mongoose = require('mongoose');
+
+const applicationSchema = new mongoose.Schema({
+  studentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Student',
+    required: true
+  },
+  university: {
+    name: String,
+    country: String,
+    program: String,
+    intake: String,
+    year: Number
+  },
+  status: {
+    type: String,
+    enum: ['New', 'In Review', 'Applied', 'Shortlisted', 'Offer Received', 'Admitted', 'Rejected', 'Withdrawn'],
+    default: 'New'
+  },
+  applicationDate: Date,
+  deadlineDate: Date,
+  fees: {
+    applicationFee: Number,
+    tuitionFee: Number,
+    currency: String
+  },
+  requirements: [String],
+  notes: String,
+  documents: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Document'
+  }],
+  timeline: [{
+    status: String,
+    date: Date,
+    notes: String
+  }],
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+module.exports = mongoose.model('Application', applicationSchema);

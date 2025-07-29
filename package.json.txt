@@ -1,0 +1,84 @@
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const multer = require('multer');
+const path = require('path');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const fs = require('fs');
+
+const app = express();
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use('/uploads', express.static('uploads'));
+
+// Ensure uploads directory exists
+if (!fs.existsSync('uploads')) {
+  fs.mkdirSync('uploads');
+}
+
+// MongoDB Connection (local for offline use)
+mongoose.connect('mongodb://localhost:27017/educonnect_crm', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
+
+// File upload configuration
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only PDF, JPG, and PNG allowed.'));
+    }
+  },
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  }
+});
+
+// Import models
+const User = require('./models/User');
+const Student = require('./models/Student');
+const Application = require('./models/Application');
+const Document = require('./models/Document');
+const Note = require('./models/Note');
+
+// Import routes
+const authRoutes = require('./routes/auth');
+const studentRoutes = require('./routes/students');
+const agentRoutes = require('./routes/agents');
+const documentRoutes = require('./routes/documents');
+const applicationRoutes = require('./routes/applications');
+
+// Use routes
+app.use('/api/auth', authRoutes);
+app.use('/api/students', studentRoutes);
+app.use('/api/agents', agentRoutes);
+app.use('/api/documents', documentRoutes);
+app.use('/api/applications', applicationRoutes);
+
+// Error handling middleware
+app.use((error, req, res, next) => {
+  console.error(error);
+  res.status(500).json({ message: 'Something went wrong!' });
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

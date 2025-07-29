@@ -1,0 +1,51 @@
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import './App.css';
+
+// Components
+import Header from './components/Header';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import StudentDashboard from './pages/StudentDashboard';
+import AgentDashboard from './pages/AgentDashboard';
+import StudentProfile from './pages/StudentProfile';
+import Applications from './pages/Applications';
+import Documents from './pages/Documents';
+
+// Context
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <div className="App">
+          <Header />
+          <main className="main-content">
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><StudentProfile /></ProtectedRoute>} />
+              <Route path="/applications" element={<ProtectedRoute><Applications /></ProtectedRoute>} />
+              <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
+              <Route path="/" element={<Navigate to="/dashboard" />} />
+            </Routes>
+          </main>
+        </div>
+      </Router>
+    </AuthProvider>
+  );
+}
+
+const ProtectedRoute = ({ children }) => {
+  const { user } = useAuth();
+  return user ? children : <Navigate to="/login" />;
+};
+
+const Dashboard = () => {
+  const { user } = useAuth();
+  return user?.userType === 'student' ? <StudentDashboard /> : <AgentDashboard />;
+};
+
+export default App;
